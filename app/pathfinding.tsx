@@ -14,7 +14,7 @@ export function createLongestPath(grid: GridItem[][]): GridItem[] {
     let currentColumn = 0;
 
     while (currentRow < rows) {
-        // Traverse the current row in the direction (left to right or right to left)
+        /* Traverse the current row in the direction (left to right or right to left)
         while (currentColumn >= 0 && currentColumn < columns) {
             if (!grid[currentRow][currentColumn].visited) {
                 grid[currentRow][currentColumn].visited = true;
@@ -37,20 +37,15 @@ export function createLongestPath(grid: GridItem[][]): GridItem[] {
             currentRow++;
             // Reset the column to the same position
             currentColumn = columns - 1;
-            
-            // Continue from the next row and add the current column to the path
-            if (currentRow < rows) {
-                if (!grid[currentRow][currentColumn].visited) {
-                    grid[currentRow][currentColumn].visited = true;
-                    path.push(grid[currentRow][currentColumn]); // Add cell to the path
-                }
-            }
-
-            // Move to the next row
-            currentRow++;
+ 
+   
             // Reset the column to the start of the new row
             currentColumn = 0;
         }
+            */
+
+
+        
     }
 
     return path; // Return the longest path through the grid
