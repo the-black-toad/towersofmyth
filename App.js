@@ -6,24 +6,40 @@ import { createEnemy, createTower } from './ecs/entities';
 import { moveEnemiesSystem, towerAttackSystem } from './ecs/systems';
 import Grid from './components/Grid';
 import Tower from './components/Tower';  // Import Tower component
+import { createPathWithTurns } from './components/pathUtils';
 
 const { width, height } = Dimensions.get('window');
 
 export default function App() {
+
+
+  const GRID_SIZE = 50;
+  const numColumns = Math.floor(width / GRID_SIZE);
+  const numRows = Math.floor(height / GRID_SIZE);
+  
+  // Call the function with a specified number of turns (e.g., 3 turns)
+  const predefinedPath = createPathWithTurns(numRows, numColumns, 4);
+
   // Initialize entities with a default structure
   const [entities, setEntities] = useState({
     physics: { engine: null, world: null },  // Default physics object
     enemy: null,  // Initially set enemy to null
     towers: {},  // Start with empty towers
+    path: predefinedPath, 
   });
+
 
   useEffect(() => {
     // Create Matter.js engine and world
     const engine = Matter.Engine.create();
     const world = engine.world;
+       // Disable gravity
+    world.gravity.y = 0;  // This disables vertical gravity
+    world.gravity.x = 0; 
 
     // Create the enemy entity after the world has been created
-    const enemy = createEnemy(world, { x: 100, y: 100 });
+    const enemy = createEnemy(world, { x: predefinedPath[0].col * 50, y: predefinedPath[0].row * 50 });
+    enemy.currentWaypointIndex = 0;
 
     console.log("we hit this useEffect");
 
@@ -32,6 +48,8 @@ export default function App() {
       physics: { engine, world },
       enemy: enemy,  // Set the created enemy here
       towers: {},  // Keep towers empty
+      path: predefinedPath,
+      
     });
 
     const interval = setInterval(() => {
@@ -78,7 +96,8 @@ export default function App() {
         systems={[moveEnemiesSystem, towerAttackSystem]}
         entities={entities}
       >
-        <Grid onGridPress={handleGridPress} />
+        <Grid onGridPress={handleGridPress} path={predefinedPath} /> 
+     
         {Object.values(entities.towers).map(tower => (
           <Tower key={tower.id} position={tower.components.position} />
         ))}

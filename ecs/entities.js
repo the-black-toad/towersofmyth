@@ -5,25 +5,28 @@ import Tower from '../components/Tower';  // Import Tower component
 
 let entityId = 0;
 
-export const createEnemy = (world, { x, y }) => {
-    const body = Matter.Bodies.rectangle(x, y, 40, 40, {
-      isStatic: false,
-    });
-    
-    Matter.World.add(world, body);
-  
-    return {
-      id: entityId++,
-      body,  // Ensure this is defined
-      components: {
-        position: new Position(x, y),
-        health: new Health(100),
-        damage: new Damage(10),
-      },
-      renderer: <Enemy body={body} />,  // Pass the body to the Enemy renderer
-    };
-  };
 
+export const createEnemy = (world, { x, y }) => {
+  const body = Matter.Bodies.rectangle(x, y, 40, 40, {
+    isStatic: false,
+  });
+  
+  Matter.World.add(world, body);
+
+  return {
+    id: entityId++,  // Unique ID for the enemy
+    body,  // Ensure this is defined
+    components: {
+      position: new Position(x, y),
+      health: new Health(100),
+      damage: new Damage(10),
+    },
+    isWaiting: false,    // Initialize waiting state
+    waitTime: 500,       // Set default wait time (in milliseconds)
+    currentWaypointIndex: 0,  // Initialize waypoint index
+    renderer: <Enemy body={body} />,  // Pass the body to the Enemy renderer
+  };
+};
 export const createTower = ({ x, y }) => {
     console.log("Creating tower: ", x, y);
     return {
