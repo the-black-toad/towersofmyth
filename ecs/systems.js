@@ -1,3 +1,6 @@
+import Matter from "matter-js";
+import EventEmitter from "react-native/Libraries/vendor/emitter/EventEmitter";
+
 export const moveEnemiesSystem = (entities, { time }) => {
   const enemy = entities.enemy;
   const path = entities.path;
@@ -12,39 +15,43 @@ export const moveEnemiesSystem = (entities, { time }) => {
   const currentWaypoint = path[enemy.currentWaypointIndex];
 
   // Convert grid coordinates to actual x, y positions
-  const targetX = currentWaypoint.col * .5;  // Adjust according to your GRID_SIZE
-  const targetY = currentWaypoint.row * .5;
+  const targetX = currentWaypoint.col * 50;  // Adjust according to your GRID_SIZE
+  const targetY = currentWaypoint.row * 50;
 
   const deltaX = targetX - currentPos.x;
   const deltaY = targetY - currentPos.y;
-  const moveSpeed = 0.01;  // Movement speed
+  const moveSpeed = 1;  // Movement speed
 
-  // Check if the enemy is currently waiting
+  console.log("current position", currentPos, "currentwaypoint:", currentWaypoint, "moving towards:", targetX, "with a delta of", deltaX);
+
   if (enemy.isWaiting) {
-    // Check how long the enemy has been waiting
-    if (enemy.waitTime > 0) {
-      enemy.waitTime -= time;  // Decrease wait time
-    } else {
-      // Reset waiting state and move to the next waypoint
-      enemy.isWaiting = false;
-      enemy.currentWaypointIndex += 1;
-      enemy.waitTime = 500; // Reset wait time for the next waypoint (in milliseconds)
-    }
+    // Decrease wait time or reset waiting state
+    enemy.waitTime > 0 ? enemy.waitTime -= time : (enemy.isWaiting = false, enemy.currentWaypointIndex += 1, enemy.waitTime = 500);
   } else {
-    // Move towards the target
-    if (Math.abs(deltaX) > moveSpeed) {
+    // Prioritize X movement if deltaX is greater than deltaY
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Move right or left based on deltaX
       enemy.components.position.x += Math.sign(deltaX) * moveSpeed;
-      enemy.body.position.x += Math.sign(deltaX) * moveSpeed;
-    } else if (Math.abs(deltaY) > moveSpeed) {
-      enemy.components.position.y += Math.sign(deltaY) * moveSpeed;
-      enemy.body.position.y += Math.sign(deltaY) * moveSpeed;
+      Matter.Body.setVelocity(enemy.body, { x: Math.sign(deltaX) * moveSpeed, y: 0 });
+
+
     } else {
-      // If the enemy has reached the waypoint, start waiting
+      // Move up or down based on deltaY
+      enemy.components.position.y += Math.sign(deltaY) * moveSpeed;
+      Matter.Body.setVelocity(enemy.body, { x: 0, y: Math.sign(deltaY) * moveSpeed });
+      // update position 
+      
+    }
+  
+    // If the enemy has reached the waypoint, start waiting
+    if (deltaX <= (moveSpeed/2) && deltaY <= (moveSpeed/2)) {
       enemy.isWaiting = true;
       enemy.waitTime = 500; // Wait for 500 milliseconds
     }
-  }
 
+    // how do we update the position so that the calculation can go again 
+    
+  }
   return entities;
 };
 
