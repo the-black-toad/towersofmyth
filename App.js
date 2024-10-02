@@ -1,107 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Dimensions, Button } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
 import { createEnemy, createTower } from './ecs/entities';
 import { moveEnemiesSystem, towerAttackSystem } from './ecs/systems';
 import Grid from './components/Grid';
-import Tower from './components/Tower';  // Import Tower component
+import Tower from './components/Tower';
 import { createPathWithTurns } from './components/pathUtils';
 
 const { width, height } = Dimensions.get('window');
 
 export default function App() {
-
-
   const GRID_SIZE = 50;
   const numColumns = Math.floor(width / GRID_SIZE);
   const numRows = Math.floor(height / GRID_SIZE);
   
-  // Call the function with a specified number of turns (e.g., 3 turns)
   const predefinedPath = createPathWithTurns(numRows, numColumns, 4);
 
-  // Initialize entities with a default structure
+  const [gameEngine, setGameEngine] = useState(null);
   const [entities, setEntities] = useState({
-    physics: { engine: null, world: null },  // Default physics object
-    enemy: null,  // Initially set enemy to null
-    towers: {},  // Start with empty towers
-    path: predefinedPath, 
+    physics: { engine: null, world: null },
+    enemies: {},
+    towers: {},
+    path: predefinedPath,
   });
 
+  
 
   useEffect(() => {
-    // Create Matter.js engine and world
     const engine = Matter.Engine.create();
     const world = engine.world;
-       // Disable gravity
-    world.gravity.y = 0;  // This disables vertical gravity
-    world.gravity.x = 0; 
+    world.gravity.y = 0;
+    world.gravity.x = 0;
 
-    // Create the enemy entity after the world has been created
-    const enemy = createEnemy(world, { x: predefinedPath[0].col * 50, y: predefinedPath[0].row * 50 });
-    enemy.currentWaypointIndex = 0;
-
-    console.log("we hit this useEffect");
-
-    // Safely initialize entities
-    setEntities({
+    setEntities(prevEntities => ({
+      ...prevEntities,
       physics: { engine, world },
-      enemy: enemy,  // Set the created enemy here
-      towers: {},  // Keep towers empty
-      path: predefinedPath,
-      
-    });
+    }));
 
     const interval = setInterval(() => {
       Matter.Engine.update(engine, 1000 / 60);
     }, 1000 / 60);
 
     return () => clearInterval(interval);
-  }, []);  // Empty dependency array to run only once on mount
+  }, );
 
   const handleGridPress = (x, y) => {
-    console.log(`Grid pressed at: (${x}, ${y})`); // Debugging log
-    
-    // Create the tower with the given x and y coordinates
-    const tower = createTower({ x: x, y: y });
-
-    // Update the entities to include the new tower
-    setEntities((prev) => {
-      const updatedTowers = {
-        ...prev.towers,  // Keep existing towers
-        [tower.id]: tower,  // Add new tower by its unique id
-      };
-
-      return {
-        ...prev,  // Keep other entities like the enemy and physics
-        towers: updatedTowers,  // Update towers in the state
-      };
-      
-    });
+    console.log(`Grid pressed at: (${x}, ${y})`);
+    const tower = createTower({ x, y });
+    setEntities(prevEntities => ({
+      ...prevEntities,
+      towers: {
+        ...prevEntities.towers,
+        [tower.id]: tower,
+      },
+    }));
+    if (gameEngine) {
+      gameEngine.dispatch({ type: 'add-tower', tower });
+    }
   };
 
-   // Log the current state of entities to check if the enemy has been initialized
-   console.log("Current Entities State:", entities);
+  const handleSpawnEnemy = () => {
+    const enemy = createEnemy(entities.physics.world, { 
+      x: predefinedPath[0].col * 50, 
+      y: predefinedPath[0].row * 50 
+    });
+    enemy.currentWaypointIndex = 0;
+    
+    setEntities(prevEntities => ({
+      ...prevEntities,
+      enemies: {
+        ...prevEntities.enemies,
+        [enemy.id]: enemy,
+      },
+    }));
+    if (gameEngine) {
+      gameEngine.dispatch({ type: 'add-enemy', enemy });
+    }
+  };
 
-  // Ensure entities are not null when passed to GameEngine
-  if (!entities.physics.engine || !entities.enemy) {
-    console.log("Physics engine or enemy not initialized");
-    return null;  // Don't render until entities are fully initialized
-  }
+  const updateEntitiesHandler = (entities, { touches, dispatch, events }) => {
+    let updatedEntities = { ...entities };
+
+    if (events.length) {
+      events.forEach((e) => {
+        if (e.type === 'add-tower') {
+          updatedEntities.towers[e.tower.id] = e.tower;
+        } else if (e.type === 'add-enemy') {
+          updatedEntities.enemies[e.enemy.id] = e.enemy;
+        }
+      });
+    }
+
+    return updatedEntities;
+  };
 
   return (
     <View style={styles.container}>
       <GameEngine
+        ref={(ref) => { setGameEngine(ref) }}
         style={styles.gameContainer}
-        systems={[moveEnemiesSystem, towerAttackSystem]}
+        systems={[updateEntitiesHandler, moveEnemiesSystem, towerAttackSystem]}
         entities={entities}
       >
-        <Grid onGridPress={handleGridPress} path={predefinedPath} /> 
-     
+        <Grid onGridPress={handleGridPress} path={predefinedPath} />
         {Object.values(entities.towers).map(tower => (
           <Tower key={tower.id} position={tower.components.position} />
         ))}
+        {Object.values(entities.enemies).map(enemy => {
+          const EnemyRenderer = enemy.renderer;
+          return (
+            <EnemyRenderer key={enemy.id} position={enemy.body.position} />
+          );
+        })}
       </GameEngine>
+      
+      <View style={styles.buttonContainer}>
+        <Button title="Spawn Enemy" onPress={handleSpawnEnemy} />
+      </View>
     </View>
   );
 }
@@ -113,6 +129,13 @@ const styles = StyleSheet.create({
   },
   gameContainer: {
     width: width,
-    height: height,
+    height: height - 50,  // Adjust to make space for the button
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#fff',
+    padding: 10,
   },
 });

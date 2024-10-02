@@ -10,12 +10,13 @@ export const createEnemy = (world, { x, y }) => {
   const body = Matter.Bodies.rectangle(x, y, 40, 40, {
     isStatic: false,
   });
-  
+
+  let enemyid = 0;
   Matter.World.add(world, body);
 
   return {
-    id: entityId++,  // Unique ID for the enemy
-    body,  // Ensure this is defined
+    id: enemyid++,  // Unique ID for the enemy
+    body,  // Matter.js body for the enemy
     components: {
       position: new Position(x, y),
       health: new Health(100),
@@ -24,9 +25,15 @@ export const createEnemy = (world, { x, y }) => {
     isWaiting: false,    // Initialize waiting state
     waitTime: 500,       // Set default wait time (in milliseconds)
     currentWaypointIndex: 0,  // Initialize waypoint index
-    renderer: <Enemy body={body} />,  // Pass the body to the Enemy renderer
+
+    // Renderer must be a reference to a React component, not a JSX element
+    renderer: Enemy,
   };
 };
+
+
+
+
 export const createTower = ({ x, y }) => {
     console.log("Creating tower: ", x, y);
     return {
