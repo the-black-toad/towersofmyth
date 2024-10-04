@@ -6,6 +6,7 @@ import { createEnemy, createTower } from './ecs/entities';
 import { moveEnemiesSystem, towerAttackSystem } from './ecs/systems';
 import Grid from './components/Grid';
 import Tower from './components/Tower';
+import Enemy from './components/Enemy';
 import { createPathWithTurns } from './components/pathUtils';
 
 const { width, height } = Dimensions.get('window');
@@ -14,7 +15,6 @@ export default function App() {
   const GRID_SIZE = 50;
   const numColumns = Math.floor(width / GRID_SIZE);
   const numRows = Math.floor(height / GRID_SIZE);
-  
   const predefinedPath = createPathWithTurns(numRows, numColumns, 4);
 
   const [gameEngine, setGameEngine] = useState(null);
@@ -24,8 +24,6 @@ export default function App() {
     towers: {},
     path: predefinedPath,
   });
-
-  
 
   useEffect(() => {
     const engine = Matter.Engine.create();
@@ -47,7 +45,7 @@ export default function App() {
 
   const handleGridPress = (x, y) => {
     console.log(`Grid pressed at: (${x}, ${y})`);
-    const tower = createTower({ x, y });
+    const tower = createTower(entities.physics.world, { x: x * GRID_SIZE, y: y * GRID_SIZE });
     setEntities(prevEntities => ({
       ...prevEntities,
       towers: {
@@ -61,12 +59,11 @@ export default function App() {
   };
 
   const handleSpawnEnemy = () => {
-    const enemy = createEnemy(entities.physics.world, { 
-      x: predefinedPath[0].col * 50, 
-      y: predefinedPath[0].row * 50 
+    const enemy = createEnemy(entities.physics.world, {
+      x: predefinedPath[0].col * GRID_SIZE,
+      y: predefinedPath[0].row * GRID_SIZE
     });
     enemy.currentWaypointIndex = 0;
-    
     setEntities(prevEntities => ({
       ...prevEntities,
       enemies: {
@@ -81,7 +78,6 @@ export default function App() {
 
   const updateEntitiesHandler = (entities, { touches, dispatch, events }) => {
     let updatedEntities = { ...entities };
-
     if (events.length) {
       events.forEach((e) => {
         if (e.type === 'add-tower') {
@@ -91,10 +87,26 @@ export default function App() {
         }
       });
     }
-
     return updatedEntities;
   };
 
+  const renderEntities = (entities) => {
+    const enemies = Object.values(entities.enemies).map((enemy) => (
+      <Enemy key={enemy.id} {...enemy} />
+    ));
+    const towers = Object.values(entities.towers).map((tower) => (
+      <Tower key={tower.id} {...tower} />
+    ));
+  
+    return (
+      <>
+        {enemies}
+        {towers}
+      </>
+    );
+  };
+
+  
   return (
     <View style={styles.container}>
       <GameEngine
@@ -104,17 +116,8 @@ export default function App() {
         entities={entities}
       >
         <Grid onGridPress={handleGridPress} path={predefinedPath} />
-        {Object.values(entities.towers).map(tower => (
-          <Tower key={tower.id} position={tower.components.position} />
-        ))}
-        {Object.values(entities.enemies).map(enemy => {
-          const EnemyRenderer = enemy.renderer;
-          return (
-            <EnemyRenderer key={enemy.id} position={enemy.body.position} />
-          );
-        })}
+        {renderEntities(entities)} 
       </GameEngine>
-      
       <View style={styles.buttonContainer}>
         <Button title="Spawn Enemy" onPress={handleSpawnEnemy} />
       </View>
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
   },
   gameContainer: {
     width: width,
-    height: height - 50,  // Adjust to make space for the button
+    height: height - 50, // Adjust to make space for the button
   },
   buttonContainer: {
     position: 'absolute',
