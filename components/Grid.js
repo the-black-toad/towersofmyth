@@ -27,10 +27,10 @@ const Grid = ({ onGridPress, path }) => {
             key={index}
             style={[
               styles.gridCell, 
-              { left: x, top: y }, 
+              { left: parseInt(x, 10) || 0, top: parseInt(y, 10) || 0 }, 
               isPathCell ? styles.pathCell : null  // Color the path cells
             ]}
-            onPress={() => onGridPress(x, y)}
+            onPress={() => onGridPress(parseInt(x, 10) || 0, parseInt(y, 10) || 0)}
           />
         );
       })}

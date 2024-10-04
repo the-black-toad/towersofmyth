@@ -41,7 +41,7 @@ export const moveEnemiesSystem = (entities, { time }) => {
 
       if (distanceToWaypoint <= moveSpeed * 0.5) {
         // Reached the waypoint
-        Matter.Body.setPosition(enemy.body, { x: targetX, y: targetY });
+        
         enemy.isWaiting = true;
         enemy.waitTime = 250; // Wait at the waypoint
 

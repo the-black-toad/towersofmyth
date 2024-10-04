@@ -45,7 +45,10 @@ export default function App() {
 
   const handleGridPress = (x, y) => {
     console.log(`Grid pressed at: (${x}, ${y})`);
-    const tower = createTower(entities.physics.world, { x: x * GRID_SIZE, y: y * GRID_SIZE });
+    
+    const tower = createTower(entities.physics.world, {x, y})
+    
+    
     setEntities(prevEntities => ({
       ...prevEntities,
       towers: {
