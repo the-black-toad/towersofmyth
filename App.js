@@ -43,7 +43,7 @@ export default function App() {
     }, 1000 / 60);
 
     return () => clearInterval(interval);
-  }, );
+  }, []);
 
   const handleGridPress = (x, y) => {
     console.log(`Grid pressed at: (${x}, ${y})`);
