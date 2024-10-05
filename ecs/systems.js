@@ -4,6 +4,10 @@ import Matter from "matter-js";
 
 const debugMovement = true;
 
+
+const MOVE_SPEED = 2; // Increased from 1 to 2 for smoother movement
+const GRID_SIZE = 50;
+
 export const moveEnemiesSystem = (entities, { time, gameEngine }) => {
   if (!gameEngine || !gameEngine.dispatch) {
     console.warn("gameEngine or gameEngine.dispatch is undefined");
@@ -15,68 +19,56 @@ export const moveEnemiesSystem = (entities, { time, gameEngine }) => {
 
   Object.values(enemies).forEach((enemy) => {
     if (!enemy || !enemy.body || enemy.currentWaypointIndex >= path.length) {
-      return; // Skip if enemy is invalid or has reached the end of the path
+      return;
     }
 
     const currentPos = enemy.body.position;
     const currentWaypoint = path[enemy.currentWaypointIndex];
-    const targetX = currentWaypoint.col * 50;
-    const targetY = currentWaypoint.row * 50;
+    const targetX = currentWaypoint.col * GRID_SIZE + GRID_SIZE / 2;
+    const targetY = currentWaypoint.row * GRID_SIZE + GRID_SIZE / 2;
 
     const deltaX = targetX - currentPos.x;
     const deltaY = targetY - currentPos.y;
-    const moveSpeed = 1;
 
-    if (enemy.isWaiting) {
-      // Handle waiting state
-      if (enemy.waitTime > 0) {
-        enemy.waitTime -= time.delta;
+    const distanceToWaypoint = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+
+    if (distanceToWaypoint <= MOVE_SPEED) {
+      // Reached the waypoint
+      Matter.Body.setPosition(enemy.body, { x: targetX, y: targetY });
+      enemy.currentWaypointIndex++;
+
+      if (enemy.currentWaypointIndex === path.length) {
+        gameEngine.dispatch({
+          type: "ENEMY_REACHED_FINAL_WAYPOINT",
+          enemyId: enemy.id,
+          position: { x: targetX, y: targetY }
+        });
       } else {
-        enemy.isWaiting = false;
-        enemy.currentWaypointIndex += 1;
-        enemy.waitTime = 500; // Reset wait time
-      }
-    } else {
-      const distanceToWaypoint = Math.sqrt(deltaX ** 2 + deltaY ** 2);
-
-      if (distanceToWaypoint <= moveSpeed * 0.5) {
-        // Reached the waypoint
-        enemy.isWaiting = true;
-        enemy.waitTime = 250; // Wait at the waypoint
-
-        if (enemy.currentWaypointIndex === path.length - 1) {
-          Matter.Body.setVelocity(enemy.body, { x: 0, y: 0 }); // Stop at final waypoint
-
-          gameEngine.dispatch({
-            type: "ENEMY_REACHED_FINAL_WAYPOINT",
-            enemyId: enemy.id,
-            position: { x: targetX, y: targetY }
-          });
-        }
-
         gameEngine.dispatch({
           type: "ENEMY_REACHED_WAYPOINT",
           enemyId: enemy.id,
           position: { x: targetX, y: targetY }
         });
-      } else {
-        // Calculate and set velocity towards the next waypoint
-        const velocityX = (deltaX / distanceToWaypoint) * moveSpeed;
-        const velocityY = (deltaY / distanceToWaypoint) * moveSpeed;
-        Matter.Body.setVelocity(enemy.body, { x: velocityX, y: velocityY });
-
-        // Notify the game engine the enemy is moving and force re-render
-        gameEngine.dispatch({
-          type: "ENEMY_MOVING",
-          enemyId: enemy.id,
-          position: { x: currentPos.x, y: currentPos.y },
-          velocity: { x: velocityX, y: velocityY }
-        });
-
-        // Update enemy's position component for rendering
-        enemy.components.position = { x: currentPos.x, y: currentPos.y };
       }
+    } else {
+      // Move towards the next waypoint
+      const moveX = (deltaX / distanceToWaypoint) * MOVE_SPEED;
+      const moveY = (deltaY / distanceToWaypoint) * MOVE_SPEED;
+
+      const newX = currentPos.x + moveX;
+      const newY = currentPos.y + moveY;
+
+      Matter.Body.setPosition(enemy.body, { x: newX, y: newY });
+
+      gameEngine.dispatch({
+        type: "ENEMY_MOVING",
+        enemyId: enemy.id,
+        position: { x: newX, y: newY }
+      });
     }
+
+    // Update enemy's position component for rendering
+    enemy.components.position = { x: enemy.body.position.x, y: enemy.body.position.y };
   });
 
   return entities;

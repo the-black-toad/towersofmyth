@@ -142,7 +142,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <GameEngine
-        ref={(ref) => { setGameEngine(ref) }}
+        ref={setGameEngine}
         style={styles.gameContainer}
         systems={[updateEntitiesHandler, (entities, args) => moveEnemiesSystem(entities, { ...args, gameEngine })]} 
         entities={entities}
