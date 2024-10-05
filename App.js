@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, Dimensions, Button } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
@@ -93,21 +93,24 @@ export default function App() {
     return updatedEntities;
   };
 
-  const renderEntities = (entities) => {
-    const enemies = Object.values(entities.enemies).map((enemy) => (
-      <Enemy key={enemy.id} {...enemy} />
-    ));
-    const towers = Object.values(entities.towers).map((tower) => (
-      <Tower key={tower.id} {...tower} />
-    ));
-  
+ const renderEntities = useCallback(() => {
     return (
       <>
-        {enemies}
-        {towers}
+        {Object.values(entities.enemies).map((enemy) => (
+          <Enemy 
+            key={enemy.id} 
+            position={enemy.body.position || enemy.components.position} 
+          />
+        ))}
+        {Object.values(entities.towers).map((tower) => (
+          <Tower 
+            key={tower.id} 
+            position={tower.body.position || tower.components.position} 
+          />
+        ))}
       </>
     );
-  };
+  }, [entities.enemies, entities.towers]);
 
   const handleEvent = (event) => {
     switch (event.type) {

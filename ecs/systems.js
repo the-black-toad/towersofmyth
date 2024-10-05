@@ -67,7 +67,8 @@ export const moveEnemiesSystem = (entities, { time, gameEngine }) => {
       });
     }
 
-    // Update enemy's position component for rendering
+    // Update both body.position and components.position for consistency
+    enemy.body.position = { x: enemy.body.position.x, y: enemy.body.position.y };
     enemy.components.position = { x: enemy.body.position.x, y: enemy.body.position.y };
   });
 
