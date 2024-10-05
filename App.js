@@ -109,14 +109,44 @@ export default function App() {
     );
   };
 
+  const handleEvent = (event) => {
+    switch (event.type) {
+      case 'ENEMY_MOVING':
+        // Create a new enemies object and update the enemy's position in state immutably
+        setEntities(prevEntities => ({
+          ...prevEntities,
+          enemies: {
+            ...prevEntities.enemies,
+            [event.enemyId]: {
+              ...prevEntities.enemies[event.enemyId],
+              components: {
+                ...prevEntities.enemies[event.enemyId].components,
+                position: event.position
+              }
+            }
+          }
+        }));
+        break;
+      case 'ENEMY_REACHED_WAYPOINT':
+        // Handle waypoint logic here if needed
+        break;
+      case 'ENEMY_REACHED_FINAL_WAYPOINT':
+        // Handle final waypoint logic here if needed
+        break;
+      default:
+        break;
+    }
+  };
+  
   
   return (
     <View style={styles.container}>
       <GameEngine
         ref={(ref) => { setGameEngine(ref) }}
         style={styles.gameContainer}
-        systems={[updateEntitiesHandler, moveEnemiesSystem, towerAttackSystem]}
+        systems={[updateEntitiesHandler, (entities, args) => moveEnemiesSystem(entities, { ...args, gameEngine })]} 
         entities={entities}
+        onEvent={handleEvent}
       >
         <Grid onGridPress={handleGridPress} path={predefinedPath} />
         {renderEntities(entities)} 
