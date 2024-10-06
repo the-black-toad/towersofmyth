@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { StyleSheet, View, Dimensions, Button } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
@@ -93,7 +93,8 @@ export default function App() {
     return updatedEntities;
   };
 
- const renderEntities = useCallback(() => {
+  // Render function to use the latest enemy positions
+  const renderEntities = useCallback(() => {
     return (
       <>
         {Object.values(entities.enemies).map((enemy) => (
@@ -112,23 +113,15 @@ export default function App() {
     );
   }, [entities.enemies, entities.towers]);
 
-  const handleEvent = (event) => {
+  
+  const enemyPositionsRef = useRef({});
+  const updateQueueRef = useRef({});
+
+  const handleEvent = useCallback((event) => {
     switch (event.type) {
       case 'ENEMY_MOVING':
-        // Create a new enemies object and update the enemy's position in state immutably
-        setEntities(prevEntities => ({
-          ...prevEntities,
-          enemies: {
-            ...prevEntities.enemies,
-            [event.enemyId]: {
-              ...prevEntities.enemies[event.enemyId],
-              components: {
-                ...prevEntities.enemies[event.enemyId].components,
-                position: event.position
-              }
-            }
-          }
-        }));
+        enemyPositionsRef.current[event.enemyId] = event.position;
+        updateQueueRef.current[event.enemyId] = true;
         break;
       case 'ENEMY_REACHED_WAYPOINT':
         // Handle waypoint logic here if needed
@@ -139,8 +132,36 @@ export default function App() {
       default:
         break;
     }
-  };
-  
+  }, []);
+
+  const updateEnemyPositions = useCallback(() => {
+    if (Object.keys(updateQueueRef.current).length > 0) {
+      setEntities(prevEntities => {
+        const updatedEnemies = { ...prevEntities.enemies };
+        Object.keys(updateQueueRef.current).forEach(enemyId => {
+          updatedEnemies[enemyId] = {
+            ...updatedEnemies[enemyId],
+            components: {
+              ...updatedEnemies[enemyId].components,
+              position: enemyPositionsRef.current[enemyId]
+            }
+          };
+        });
+        updateQueueRef.current = {};
+        return { ...prevEntities, enemies: updatedEnemies };
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    let frameId;
+    const updateFrame = () => {
+      updateEnemyPositions();
+      frameId = requestAnimationFrame(updateFrame);
+    };
+    frameId = requestAnimationFrame(updateFrame);
+    return () => cancelAnimationFrame(frameId);
+  }, [updateEnemyPositions]);
   
   return (
     <View style={styles.container}>
