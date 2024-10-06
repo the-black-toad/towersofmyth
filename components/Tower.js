@@ -2,12 +2,12 @@ import { Body } from 'matter-js';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-const Tower = ({body}) => {
+const Tower = ({position}) => {
 
-  const { x, y } = body.position;
+  
   //console.log(`Rendering Tower at: (${position.x}, ${position.y})`);  // Add log to confirm tower rendering
   return (
-    <View style={[styles.tower, { left: x, top: y }]} />  // Adjust to center tower
+    <View style={[styles.tower, { left: position.x, top: position.y }]} />  // Adjust to center tower
   );
 };
 
