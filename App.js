@@ -127,7 +127,17 @@ export default function App() {
         // Handle waypoint logic here if needed
         break;
       case 'ENEMY_REACHED_FINAL_WAYPOINT':
-        // Handle final waypoint logic here if needed
+        // Delete the enemy from the entities
+        setEntities(prevEntities => {
+          const updatedEnemies = { ...prevEntities.enemies };
+          delete updatedEnemies[event.enemyId];
+          
+          // Remove the enemy's body from the physics world
+          Matter.World.remove(prevEntities.physics.world, prevEntities.enemies[event.enemyId].body);
+          
+          return { ...prevEntities, enemies: updatedEnemies };
+        });
+        console.log(`Enemy ${event.enemyId} reached final waypoint and was removed`);
         break;
       default:
         break;
@@ -139,13 +149,15 @@ export default function App() {
       setEntities(prevEntities => {
         const updatedEnemies = { ...prevEntities.enemies };
         Object.keys(updateQueueRef.current).forEach(enemyId => {
-          updatedEnemies[enemyId] = {
-            ...updatedEnemies[enemyId],
-            components: {
-              ...updatedEnemies[enemyId].components,
-              position: enemyPositionsRef.current[enemyId]
-            }
-          };
+          if (updatedEnemies[enemyId]) {
+            updatedEnemies[enemyId] = {
+              ...updatedEnemies[enemyId],
+              components: {
+                ...updatedEnemies[enemyId].components,
+                position: enemyPositionsRef.current[enemyId]
+              }
+            };
+          }
         });
         updateQueueRef.current = {};
         return { ...prevEntities, enemies: updatedEnemies };
@@ -186,10 +198,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    justifyContent: 'center',  // Center vertically
+    alignItems: 'center',      // Center horizontally
   },
   gameContainer: {
     width: width,
     height: height - 50, // Adjust to make space for the button
+    justifyContent: 'center',  // Center vertically
+    alignItems: 'center',      // Center horizontally
   },
   buttonContainer: {
     position: 'absolute',
