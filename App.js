@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { StyleSheet, View, Dimensions, Button } from 'react-native';
+import { StyleSheet, View, Dimensions, Button, Text } from 'react-native';
 import { GameEngine } from 'react-native-game-engine';
 import Matter from 'matter-js';
 import { createEnemy, createTower } from './ecs/entities';
@@ -15,6 +15,7 @@ export default function App() {
   const GRID_SIZE = 50;
   const numColumns = Math.floor(width / GRID_SIZE);
   const numRows = Math.floor(height / GRID_SIZE);
+  const [lives, setLives] = useState(10);  // Initialize with 10 lives
   const predefinedPath = createPathWithTurns(numRows, numColumns, 4);
 
   const [gameEngine, setGameEngine] = useState(null);
@@ -135,6 +136,7 @@ export default function App() {
           // Remove the enemy's body from the physics world
           Matter.World.remove(prevEntities.physics.world, prevEntities.enemies[event.enemyId].body);
           
+          setLives(prevLives => Math.max(prevLives - 1, 0));
           return { ...prevEntities, enemies: updatedEnemies };
         });
         console.log(`Enemy ${event.enemyId} reached final waypoint and was removed`);
@@ -187,8 +189,9 @@ export default function App() {
         <Grid onGridPress={handleGridPress} path={predefinedPath} />
         {renderEntities(entities)} 
       </GameEngine>
-      <View style={styles.buttonContainer}>
+      <View style={styles.controls}>
         <Button title="Spawn Enemy" onPress={handleSpawnEnemy} />
+        <Text style={styles.livesText}>Lives: {lives}</Text>
       </View>
     </View>
   );
@@ -204,14 +207,20 @@ const styles = StyleSheet.create({
   gameContainer: {
     width: width,
     height: height - 50, // Adjust to make space for the button
-    justifyContent: 'center',  // Center vertically
-    alignItems: 'center',      // Center horizontally
   },
-  buttonContainer: {
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#fff',
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    backgroundColor: '#fff',
-    padding: 10,
+  },
+  livesText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
   },
 });
