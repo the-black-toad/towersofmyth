@@ -9,6 +9,8 @@ let enemyid = 0;
 export const createEnemy = (world, { x, y }) => {
   const body = Matter.Bodies.rectangle(x, y, 40, 40, {
     isStatic: false,
+    isSensor: true,
+    collisionFilter: {group: -1},
   });
   
   Matter.World.add(world, body);
