@@ -9,6 +9,7 @@ import Tower from './components/Tower';
 import Enemy from './components/Enemy';
 import { createPathWithTurns } from './components/pathUtils';
 
+const pathTurns = (Math.floor(Math.random() * 4 ) + 1)
 const { width, height } = Dimensions.get('window');
 
 export default function App() {
@@ -16,7 +17,8 @@ export default function App() {
   const numColumns = Math.floor(width / GRID_SIZE);
   const numRows = Math.floor(height / GRID_SIZE);
   const [lives, setLives] = useState(10);  // Initialize with 10 lives
-  const predefinedPath = createPathWithTurns(numRows, numColumns, 4);
+  
+  const predefinedPath = createPathWithTurns(numRows, numColumns, pathTurns);
 
   const [gameEngine, setGameEngine] = useState(null);
   const [entities, setEntities] = useState({
