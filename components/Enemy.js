@@ -1,21 +1,19 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 
-const Enemy = ({ id, position }) => {
-  const { x, y } = position;
-  
-  return (
-    <View style={[styles.enemy, { left: x - 20, top: y - 20 }]} />
-  );
-};
-
-const styles = StyleSheet.create({
-  enemy: {
+const Enemy = ({ position, health }) => (
+  <View style={{
+    position: 'absolute',
+    left: position.x - 20,
+    top: position.y - 20,
     width: 40,
     height: 40,
-    backgroundColor: 'red', // Just for visualization
-    position: 'absolute',
-  },
-});
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+  }}>
+    <Text style={{ color: 'white' }}>{Math.max(health, 0)}</Text>
+  </View>
+);
 
 export default Enemy;

@@ -75,31 +75,38 @@ export const moveEnemiesSystem = (entities, { time, gameEngine }) => {
   return entities;
 };
 
+export const towerAttackSystem = (entities, { time, gameEngine }) => {
+  const enemies = entities.enemies;
+  const towers = entities.towers;
 
-/* currently broken
-export const towerAttackSystem = (entities, { time }) => {
-  const { towers, enemies } = entities;
+
 
   Object.values(towers).forEach((tower) => {
-    const towerPosition = tower.components.position;
-
-    Object.values(enemies).forEach((enemy) => {
-      if (enemy && enemy.components && enemy.components.position && enemy.components.health) {
-        const enemyPosition = enemy.components.position;
+    const towerPosition = tower.body.position;
+    const towerRange = tower.components.range || 150;
+    
+    Object.entries(enemies).forEach(([enemyId, enemy]) => {
+      if (enemy && enemy.body && enemy.components.health) {
+        const enemyPosition = enemy.body.position;
         const distance = Math.sqrt(
           Math.pow(towerPosition.x - enemyPosition.x, 2) +
           Math.pow(towerPosition.y - enemyPosition.y, 2)
+          
         );
-
-        if (distance < tower.components.range) {
+        // this is still calculating which is concerning console.log("Calc distance", distance);
+        if (distance < towerRange) {
           enemy.components.health.value -= tower.components.damage.value;
-          console.log(`Tower attacked enemy. Enemy health: ${enemy.components.health.value}`);
+          console.log(`Tower attacked enemy ${enemyId}. Enemy health: ${enemy.components.health.value}`);
 
           // Remove enemy if health drops to or below 0
           if (enemy.components.health.value <= 0) {
-            delete entities.enemies[enemy.id];
-            Matter.World.remove(entities.physics.world, enemy.body);
-            console.log(`Enemy ${enemy.id} destroyed`);
+            console.log(`Enemy ${enemyId} destroyed`);
+            gameEngine.dispatch({
+              type: "ENEMY_KILLED",
+              enemyId: enemy.id,
+        
+            });
+
           }
         }
       }
@@ -107,4 +114,4 @@ export const towerAttackSystem = (entities, { time }) => {
   });
 
   return entities;
-};*/
+};

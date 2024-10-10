@@ -82,6 +82,9 @@ export default function App() {
         [tower.id]: tower,
       },
     }));
+    if (gameEngine) {
+      gameEngine.dispatch({ type: 'add-tower', tower });
+    }
   };
   
 
@@ -124,13 +127,15 @@ export default function App() {
         {Object.values(entities.enemies).map((enemy) => (
           <Enemy 
             key={enemy.id} 
-            position={enemy.body.position || enemy.components.position} 
+            position={enemy.body.position || enemy.components.position}
+            health={Math.max(enemy.components.health.value, 0)} 
           />
         ))}
         {Object.values(entities.towers).map((tower) => (
           <Tower 
             key={tower.id} 
             position={tower.body.position || tower.components.position} 
+            range={tower.components.range || 150}
           />
         ))}
       </>
@@ -144,44 +149,54 @@ export default function App() {
   const handleEvent = useCallback((event) => {
     switch (event.type) {
       case 'ENEMY_MOVING':
-        enemyPositionsRef.current[event.enemyId] = event.position;
-        updateQueueRef.current[event.enemyId] = true;
-        break;
-      case 'ENEMY_REACHED_WAYPOINT':
-        // Handle waypoint logic here if needed
+        if (entities.enemies[event.enemyId]) {
+          enemyPositionsRef.current[event.enemyId] = event.position;
+          updateQueueRef.current[event.enemyId] = true;
+        }
         break;
       case 'ENEMY_REACHED_FINAL_WAYPOINT':
-        // Delete the enemy from the entities
+      case 'ENEMY_KILLED':
         setEntities(prevEntities => {
           const updatedEnemies = { ...prevEntities.enemies };
-          delete updatedEnemies[event.enemyId];
-          
-          // Remove the enemy's body from the physics world
-          Matter.World.remove(prevEntities.physics.world, prevEntities.enemies[event.enemyId].body);
-          
-          setLives(prevLives => Math.max(prevLives - 1, 0));
+          if (updatedEnemies[event.enemyId]) {
+            // Remove the enemy's body from the physics world
+            Matter.Composite.remove(prevEntities.physics.world, updatedEnemies[event.enemyId].body);
+            delete updatedEnemies[event.enemyId];
+            
+            // Also remove from our refs
+            delete enemyPositionsRef.current[event.enemyId];
+            delete updateQueueRef.current[event.enemyId];
+            setEcon(prevEcon => (prevEcon + 100))
+            if (event.type === 'ENEMY_REACHED_FINAL_WAYPOINT') {
+              setLives(prevLives => Math.max(prevLives - 1, 0));
+            }
+          }
           return { ...prevEntities, enemies: updatedEnemies };
         });
-        console.log(`Enemy ${event.enemyId} reached final waypoint and was removed`);
+        console.log(`Enemy ${event.enemyId} ${event.type === 'ENEMY_KILLED' ? 'killed' : 'reached final waypoint'} and was removed`);
         break;
       default:
         break;
     }
-  }, []);
+  }, [entities]);
 
   const updateEnemyPositions = useCallback(() => {
     if (Object.keys(updateQueueRef.current).length > 0) {
       setEntities(prevEntities => {
         const updatedEnemies = { ...prevEntities.enemies };
         Object.keys(updateQueueRef.current).forEach(enemyId => {
-          if (updatedEnemies[enemyId]) {
+          if (updatedEnemies[enemyId] && enemyPositionsRef.current[enemyId]) {
             updatedEnemies[enemyId] = {
               ...updatedEnemies[enemyId],
-              components: {
-                ...updatedEnemies[enemyId].components,
+              body: {
+                ...updatedEnemies[enemyId].body,
                 position: enemyPositionsRef.current[enemyId]
               }
             };
+          } else {
+            // If the enemy no longer exists, remove it from our refs
+            delete updateQueueRef.current[enemyId];
+            delete enemyPositionsRef.current[enemyId];
           }
         });
         updateQueueRef.current = {};
@@ -189,7 +204,6 @@ export default function App() {
       });
     }
   }, []);
-
   useEffect(() => {
     let frameId;
     const updateFrame = () => {
@@ -205,7 +219,7 @@ export default function App() {
       <GameEngine
         ref={setGameEngine}
         style={styles.gameContainer}
-        systems={[updateEntitiesHandler, (entities, args) => moveEnemiesSystem(entities, { ...args, gameEngine })]} 
+        systems={[updateEntitiesHandler, (entities, args) => moveEnemiesSystem(entities, { ...args, gameEngine }), (entities, args) => towerAttackSystem(entities, { ...args, gameEngine })]} 
         entities={entities}
         onEvent={handleEvent}
       >
