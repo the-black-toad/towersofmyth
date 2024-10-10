@@ -48,9 +48,23 @@ export default function App() {
 
   const handleGridPress = (x, y) => {
     console.log(`Grid pressed at: (${x}, ${y})`);
-    
-    const tower = createTower(entities.physics.world, {x, y})
-    
+  
+    // Convert pixel coordinates to grid coordinates
+    const col = Math.floor(x / GRID_SIZE);
+    const row = Math.floor(y / GRID_SIZE);
+  
+    //console.log(`Converted to grid coordinates: (${col}, ${row})`);
+  
+    // Check if the grid cell is part of the predefined path
+    const isOnPath = predefinedPath.some(pathSegment => pathSegment.col === col && pathSegment.row === row);
+  
+    if (isOnPath) {
+      console.log('Cannot place a tower on the path!');
+      return; // Prevent tower creation
+    }
+  
+    // If not on the path, proceed with tower creation
+    const tower = createTower(entities.physics.world, { x, y });
     
     setEntities(prevEntities => ({
       ...prevEntities,
@@ -59,10 +73,8 @@ export default function App() {
         [tower.id]: tower,
       },
     }));
-    if (gameEngine) {
-      gameEngine.dispatch({ type: 'add-tower', tower });
-    }
   };
+  
 
   const handleSpawnEnemy = () => {
     const enemy = createEnemy(entities.physics.world, {
