@@ -17,7 +17,7 @@ export default function App() {
   const numColumns = Math.floor(width / GRID_SIZE);
   const numRows = Math.floor(height / GRID_SIZE);
   const [lives, setLives] = useState(10);  // Initialize with 10 lives
-  const [econ, setEcon] = useState(100);  // Initialize econ with 100
+  const [econ, setEcon] = useState(100);  // Initialize econ with 100 we have to use these instead of basic variables because use state lets us render better
   const predefinedPath = createPathWithTurns(numRows, numColumns, pathTurns);
 
   const [gameEngine, setGameEngine] = useState(null);
@@ -39,6 +39,7 @@ export default function App() {
       physics: { engine, world },
     }));
 
+    // set for 60 fps 
     const interval = setInterval(() => {
       Matter.Engine.update(engine, 1000 / 60);
     }, 1000 / 60);
@@ -75,6 +76,7 @@ export default function App() {
     // If not on the path, proceed with tower creation
     const tower = createTower(entities.physics.world, { x, y });
     
+    // update entities with the new tower
     setEntities(prevEntities => ({
       ...prevEntities,
       towers: {
@@ -82,6 +84,7 @@ export default function App() {
         [tower.id]: tower,
       },
     }));
+    // call the gameengine to update the entities 
     if (gameEngine) {
       gameEngine.dispatch({ type: 'add-tower', tower });
     }
@@ -89,6 +92,7 @@ export default function App() {
   
 
   const handleSpawnEnemy = () => {
+    // enemy needs a physics engine and a start point
     const enemy = createEnemy(entities.physics.world, {
       x: predefinedPath[0].col * GRID_SIZE,
       y: predefinedPath[0].row * GRID_SIZE
@@ -101,11 +105,13 @@ export default function App() {
         [enemy.id]: enemy,
       },
     }));
+    // call engine just like for tower
     if (gameEngine) {
       gameEngine.dispatch({ type: 'add-enemy', enemy });
     }
   };
 
+  // this goes through events and reads all the events and then updates the respective array
   const updateEntitiesHandler = (entities, { touches, dispatch, events }) => {
     let updatedEntities = { ...entities };
     if (events.length) {
@@ -145,7 +151,7 @@ export default function App() {
   
   const enemyPositionsRef = useRef({});
   const updateQueueRef = useRef({});
-
+  // these are our events that get passed from the systems 
   const handleEvent = useCallback((event) => {
     switch (event.type) {
       case 'ENEMY_MOVING':
@@ -180,6 +186,7 @@ export default function App() {
     }
   }, [entities]);
 
+  // this is how the enemy positions get updated, its not every frame and tbh claude did some magic here that im not entirely sure of 
   const updateEnemyPositions = useCallback(() => {
     if (Object.keys(updateQueueRef.current).length > 0) {
       setEntities(prevEntities => {
