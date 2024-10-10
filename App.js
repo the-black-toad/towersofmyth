@@ -17,7 +17,7 @@ export default function App() {
   const numColumns = Math.floor(width / GRID_SIZE);
   const numRows = Math.floor(height / GRID_SIZE);
   const [lives, setLives] = useState(10);  // Initialize with 10 lives
-  
+  const [econ, setEcon] = useState(100);  // Initialize econ with 100
   const predefinedPath = createPathWithTurns(numRows, numColumns, pathTurns);
 
   const [gameEngine, setGameEngine] = useState(null);
@@ -62,6 +62,15 @@ export default function App() {
       console.log('Cannot place a tower on the path!');
       return; // Prevent tower creation
     }
+
+        // Check if there's enough econ to place the tower
+    if (econ < 100) {
+      console.log('Not enough econ to place a tower!');
+      return; // Prevent tower creation if not enough econ
+    }
+
+    // Deduct 100 econ and place the tower
+    setEcon(prevEcon => prevEcon - 100);
   
     // If not on the path, proceed with tower creation
     const tower = createTower(entities.physics.world, { x, y });
@@ -206,6 +215,7 @@ export default function App() {
       <View style={styles.controls}>
         <Button title="Spawn Enemy" onPress={handleSpawnEnemy} />
         <Text style={styles.livesText}>Lives: {lives}</Text>
+        <Text style={styles.econText}>Econ: {econ}</Text> 
       </View>
     </View>
   );
@@ -233,6 +243,11 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   livesText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  econText: {  // Style for the econ display
     fontSize: 18,
     fontWeight: 'bold',
     color: '#000',
