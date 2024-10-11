@@ -87,6 +87,7 @@ export const towerAttackSystem = (entities, { time, gameEngine }) => {
     
     Object.entries(enemies).forEach(([enemyId, enemy]) => {
       if (enemy && enemy.body && enemy.components.health) {
+        
         const enemyPosition = enemy.body.position;
         const distance = Math.sqrt(
           Math.pow(towerPosition.x - enemyPosition.x, 2) +
@@ -104,8 +105,9 @@ export const towerAttackSystem = (entities, { time, gameEngine }) => {
             gameEngine.dispatch({
               type: "ENEMY_KILLED",
               enemyId: enemy.id,
-        
             });
+            delete enemies[enemyId];
+            
 
           }
         }
